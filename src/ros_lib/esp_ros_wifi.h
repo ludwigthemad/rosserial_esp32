@@ -1,6 +1,10 @@
 #pragma once
 
+#ifdef CONFIG_LET_ROS_INIT_WIFI
+
 void esp_ros_wifi_init();
+
+#endif
 
 void ros_tcp_connect(const char* host_ip, int port_num);
 

@@ -4,9 +4,10 @@
 extern "C" {
 #include "sdkconfig.h"
 #include "stdio.h"
+#include "freertos/FreeRTOS.h"
 #include "esp_err.h"
 #include "esp_timer.h"
-#include <driver/uart.h>
+#include "driver/uart.h"
 #include "esp_ros_wifi.h"
 }
 
@@ -31,7 +32,12 @@ class ESP32Hardware
         void init()
         {
 #ifdef CONFIG_ROSSERIAL_OVER_WIFI
+#ifdef CONFIG_LET_ROS_SETUP_WIFI
+          
             esp_ros_wifi_init();
+
+#endif
+
             ros_tcp_connect(ROS_SERVER_IP, ROS_SERVER_PORT);
 #else
             uart_driver_install(UART_PORT, 1024, 1024, 0, NULL, 0);

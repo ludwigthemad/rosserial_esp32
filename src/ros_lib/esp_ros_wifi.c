@@ -36,6 +36,7 @@ static int addr_family;
 static int ip_protocol;
 static int sock;
 
+#ifdef CONFIG_LET_ROS_SETUP_WIFI
 static esp_err_t event_handler(void *ctx, system_event_t *event)
 {
     switch(event->event_id) {
@@ -91,6 +92,7 @@ void esp_ros_wifi_init()
     xEventGroupWaitBits(wifi_event_group, IPV4_GOTIP_BIT, false, true, portMAX_DELAY);
     ESP_LOGI(TAG, "Connected to AP");
 }
+#endif
 
 void ros_tcp_connect(const char* host_ip, int port_num)
 {
@@ -105,6 +107,10 @@ void ros_tcp_connect(const char* host_ip, int port_num)
     sock = socket(addr_family, SOCK_STREAM, ip_protocol);
     if (sock < 0) {
         ESP_LOGE(TAG, "Unable to create socket: errno %d", errno);
+        shutdown(sock, 0);
+        close(sock);
+        lwip_socket_thread_cleanup();
+        return;
     }
 
     /* Set sock to non-blocking mode (ASYNC)
@@ -115,6 +121,7 @@ void ros_tcp_connect(const char* host_ip, int port_num)
     int err = connect(sock, (struct sockaddr *)&destAddr, sizeof(destAddr));
     if (err != 0 && errno != 119) {
         ESP_LOGE(TAG, "Socket unable to connect: errno %d", errno);
+        return;
     }
     ESP_LOGI(TAG, "Successfully connected");
 }
@@ -132,6 +139,19 @@ int ros_tcp_read(uint8_t* buf, int length)
     int len = recv(sock, buf, length, 0);
     if (len < 0 && errno != 11) {
         ESP_LOGE(TAG, "Error receiving data: errno %d", errno);
+        switch (errno)
+        {
+          case 9:
+            //ESP_LOGW(TAG, "Bad socket file! Trying to restore and reconnect ...");
+          case 128:
+            shutdown(sock, 0);
+            close(sock);
+            lwip_socket_thread_cleanup();
+            //ESP_LOGW(TAG, "Socket disconnected! Trying to reconnect ...");
+            ros_tcp_connect(CONFIG_ROSSERVER_IP,CONFIG_ROSSERVER_PORT);
+          default:
+            break;
+        }
         return -1;
     }
     return len;

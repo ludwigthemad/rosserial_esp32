@@ -1,4 +1,4 @@
-menu "rosserial"
+menu "ROSserial"
 
 config ROSSERIAL_OVER_WIFI
     bool "rosserial over WiFi using TCP"
@@ -6,17 +6,24 @@ config ROSSERIAL_OVER_WIFI
     help
         Use rosserial over WiFi using TCP
 
+config LET_ROS_SETUP_WIFI
+    bool "Use the included wifi setup and event callbacks in the esp_ros_wifi header."
+    default n
+    depends on ROSSERIAL_OVER_WIFI
+    help
+        Enable if you don't set up wifi yourself in the code
+
 config ROSSERVER_AP
     string "WiFi SSID"
     default "myssid"
-    depends on ROSSERIAL_OVER_WIFI
+    depends on LET_ROS_SETUP_WIFI
     help
         SSID (Access point name) of WiFi to connect
 
 config ROSSERVER_PASS
     string "WiFi Password"
     default "mypass"
-    depends on ROSSERIAL_OVER_WIFI
+    depends on LET_ROS_SETUP_WIFI
     help
         Password of the WiFi
 
